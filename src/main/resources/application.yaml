@@ -1,0 +1,35 @@
+
+camel:
+   springboot:
+      name: HonoBridge
+
+spring:
+   datasource:
+      url: jdbc:mariadb://localhost:3306/mariadb
+
+# enable health check
+
+management:
+   address: 0.0.0.0
+   port: 8081
+   endpoint:
+      health:
+         enabled: true
+
+endpoints:
+   enabled: false
+   health:
+      enabled: true
+
+amqp:
+   schema: amqp
+   host: messaging.enmasse.svc
+   port: 5672
+
+   uri: ${amqp.schema}://${amqp.host}:${amqp.port}?jms.topicPrefix=
+   username: consumer@HONO
+   password: verysecret
+
+iot:
+   tenant: my.iot
+

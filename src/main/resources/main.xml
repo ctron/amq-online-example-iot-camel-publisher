@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans
+    xmlns="http://www.springframework.org/schema/beans"
+    xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+    xmlns:camel="http://camel.apache.org/schema/spring"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+         http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc.xsd
+         http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+    <camel:camelContext
+        id="HonoExampleBridge"
+        xmlns="http://camel.apache.org/schema/spring">
+
+        <dataFormats>
+            <json
+                id="json"
+                library="Jackson"/>
+        </dataFormats>
+
+        <route id="aggregate">
+            <from uri="timer://timer1?period=5s" />
+
+            <setBody>
+                <constant>
+                    <![CDATA[select avg(value) as temperature,count(*) as sources from V where timestampdiff(MINUTE,ts,current_timestamp())<1]]>
+                </constant>
+            </setBody>
+
+            <to uri="jdbc:dataSource" />
+
+            <to uri="log:aggregate" />
+
+            <split>
+                <simple>${body}</simple>
+                <marshal ref="json"/>
+                <to uri="direct:publish"/>
+            </split>
+
+        </route>
+
+        <route id="publish">
+            <from uri="direct:publish"/>
+            <to uri="log:aggregate" />
+            <to uri="amqp:weather?deliveryPersistent=false&amp;deliveryMode=1&amp;explicitQosEnabled=true" />
+        </route>
+
+    </camel:camelContext>
+
+</beans>
